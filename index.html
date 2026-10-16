@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChronoPulse | Dev Stopwatch & Lap Timer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: #080711;
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 420px;
+            background: rgba(18, 15, 36, 0.85);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            border-radius: 24px;
+            padding: 30px 20px;
+            box-shadow: 0 0 35px rgba(0, 243, 255, 0.15);
+            backdrop-filter: blur(12px);
+            text-align: center;
+        }
+
+        .title {
+            font-size: 1.2rem;
+            color: #ff007f;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 0.8rem;
+            color: #00f3ff;
+            opacity: 0.8;
+            margin-bottom: 25px;
+        }
+
+        .display {
+            font-size: 3.2rem;
+            font-weight: 900;
+            font-family: monospace;
+            color: #00f3ff;
+            text-shadow: 0 0 20px rgba(0, 243, 255, 0.6);
+            margin: 20px 0;
+            letter-spacing: 2px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 25px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-start {
+            background: #00f3ff;
+            color: #080711;
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.4);
+        }
+
+        .btn-pause {
+            background: #ffb703;
+            color: #080711;
+            box-shadow: 0 0 15px rgba(255, 183, 3, 0.4);
+        }
+
+        .btn-lap {
+            background: transparent;
+            color: #ff007f;
+            border: 2px solid #ff007f;
+        }
+
+        .btn-reset {
+            background: transparent;
+            color: #64748b;
+            border: 2px solid #64748b;
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .laps-container {
+            max-height: 220px;
+            overflow-y: auto;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 15px;
+        }
+
+        .laps-container::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .laps-container::-webkit-scrollbar-thumb {
+            background: #00f3ff;
+            border-radius: 10px;
+        }
+
+        .lap-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-family: monospace;
+        }
+
+        .lap-title {
+            color: #ff007f;
+        }
+
+        .lap-time {
+            color: #00f3ff;
+        }
+
+        footer {
+            margin-top: 25px;
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="title">PROJECT 20</div>
+        <div class="subtitle">ChronoPulse Stopwatch & Lap Timer</div>
+
+        <div class="display" id="display">00:00.00</div>
+
+        <div class="btn-group">
+            <button class="btn btn-start" id="startBtn" onclick="start()">Start</button>
+            <button class="btn btn-lap" id="lapBtn" onclick="recordLap()" disabled>Lap</button>
+            <button class="btn btn-reset" id="resetBtn" onclick="reset()" disabled>Reset</button>
+        </div>
+
+        <div class="laps-container" id="lapsList">
+            <!-- Laps will be rendered here -->
+        </div>
+    </div>
+
+    <footer>© 2026 Farhad | 20 of 30 Projects Done</footer>
+
+    <script>
+        let startTime = 0;
+        let elapsedTime = 0;
+        let timerInterval;
+        let isRunning = false;
+        let lapCount = 0;
+
+        const display = document.getElementById('display');
+        const startBtn = document.getElementById('startBtn');
+        const lapBtn = document.getElementById('lapBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const lapsList = document.getElementById('lapsList');
+
+        function formatTime(time) {
+            let date = new Date(time);
+            let minutes = String(date.getUTCMinutes()).padStart(2, '0');
+            let seconds = String(date.getUTCSeconds()).padStart(2, '0');
+            let milliseconds = String(Math.floor(date.getUTCMilliseconds() / 10)).padStart(2, '0');
+            return `${minutes}:${seconds}.${milliseconds}`;
+        }
+
+        function updateDisplay() {
+            elapsedTime = Date.now() - startTime;
+            display.textContent = formatTime(elapsedTime);
+        }
+
+        function start() {
+            if (!isRunning) {
+                isRunning = true;
+                startTime = Date.now() - elapsedTime;
+                timerInterval = setInterval(updateDisplay, 10);
+
+                startBtn.textContent = 'Pause';
+                startBtn.className = 'btn btn-pause';
+                lapBtn.disabled = false;
+                resetBtn.disabled = false;
+            } else {
+                isRunning = false;
+                clearInterval(timerInterval);
+
+                startBtn.textContent = 'Start';
+                startBtn.className = 'btn btn-start';
+                lapBtn.disabled = true;
+            }
+        }
+
+        function reset() {
+            isRunning = false;
+            clearInterval(timerInterval);
+            elapsedTime = 0;
+            lapCount = 0;
+
+            display.textContent = '00:00.00';
+            lapsList.innerHTML = '';
+
+            startBtn.textContent = 'Start';
+            startBtn.className = 'btn btn-start';
+            lapBtn.disabled = true;
+            resetBtn.disabled = true;
+        }
+
+        function recordLap() {
+            if (isRunning) {
+                lapCount++;
+                const lapTimeFormatted = formatTime(elapsedTime);
+
+                const lapRow = document.createElement('div');
+                lapRow.className = 'lap-row';
+                lapRow.innerHTML = `
+                    <span class="lap-title">Lap ${lapCount}</span>
+                    <span class="lap-time">${lapTimeFormatted}</span>
+                `;
+
+                lapsList.prepend(lapRow);
+            }
+        }
+    </script>
+</body>
+</html>
